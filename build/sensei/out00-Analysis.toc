@@ -1,4 +1,4 @@
-(['sensei.py'],
+(['/Users/justinshenk/sensei/sensei.py'],
  ['/Users/justinshenk/sensei', '/Users/justinshenk/sensei'],
  ['codecs'],
  [],

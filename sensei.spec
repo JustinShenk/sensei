@@ -6,7 +6,7 @@ block_cipher = None
 a = Analysis(['sensei.py'],
              pathex=['/Users/justinshenk/sensei'],
              binaries=None,
-             datas=[('emoticon.png','/Users/justinshenk/sensei/emoticon.png')],
+             datas=None,
              hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],
@@ -18,15 +18,16 @@ pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 exe = EXE(pyz,
           a.scripts,
-          a.binaries,
-          a.zipfiles,
-          a.datas,
+          exclude_binaries=True,
           name='sensei',
           debug=False,
           strip=False,
           upx=True,
-          console=False )
-app = BUNDLE(exe,
-             name='sensei.app',
-             icon=None,
-             bundle_identifier=None)
+          console=True )
+coll = COLLECT(exe,
+               a.binaries,
+               a.zipfiles,
+               a.datas,
+               strip=False,
+               upx=True,
+               name='sensei')
