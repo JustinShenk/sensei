@@ -8,6 +8,7 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 import time
 import psutil
+# from __future__ import print_function
 
 
 class Capture(QThread):
@@ -109,7 +110,7 @@ class Capture(QThread):
             # else:
             #     continue
             # # Capture frame-by-frame
-            print "before gray"
+            # print "before gray"
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             # mask = np.zeros_like(gray)
             faces = self.faceCascade.detectMultiScale(
