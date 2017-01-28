@@ -4,13 +4,19 @@ Posture notification software
 
 ## Installation
 
+NOTE: Requires Mac with terminal-notifier installed and PyQt5.
+
 Clone the repository and run it
 `python sensei.py`
+
+## Demo
+
+[Video demo (26 MB)](https://github.com/JustinShenk/sensei/blob/master/demo-med-res.mov?raw=true)
 
 ## Usage
 
 Sit in comfortable, upright position
-Click 'calibrate'
+Click 'Calibrate'
 
 You will receive notifications if you are too close.
 
