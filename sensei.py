@@ -1,327 +1,272 @@
-#!/usr/bin/env python
-import threading
-import cv2
-import numpy as np
+# !/usr/bin/env python3
+# -*- coding: utf-8 -*-
 import os
-import sys
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
 import time
-import psutil
-# from __future__ import print_function
+import cv2
+import sys
+import pickle
+import argparse
+import datetime
+
+from PyQt5.QtWidgets import (QPushButton, QApplication, QProgressBar,
+                             QLabel, QInputDialog, QWidget, qApp, QAction, QMenuBar, QSystemTrayIcon)
+from PyQt5.QtCore import (QCoreApplication, QObject,
+                          QThread, QTimer)
+from PyQt5.QtGui import QIcon
+
+CASCPATH = 'face.xml'
+FACECASCADE = cv2.CascadeClassifier(CASCPATH)
+# Delay between checking posture in miliseconds.
+MONITOR_DELAY = 5000
+APP_ICON_PATH = 'posture.png'
+# Notify when user is 1.2 times closer than the calibration distance.
+SENSITIVITY = 1.2
+CALIBRATION_SAMPLE_RATE = 100
+
+USER_ID = None
+SESSION_ID = None
+
+
+def trace(frame, event, arg):
+    print(("%s, %s:%d" % (event, frame.f_code.co_filename, frame.f_lineno)))
+    return trace
+
+
+def getFaces(frame):
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    faces = FACECASCADE.detectMultiScale(
+        gray,
+        scaleFactor=1.1,
+        minNeighbors=2,
+        minSize=(100, 100),
+        #         flags=cv2.cv.CV_HAAR_SCALE_IMAGE
+        flags=0
+    )
+    if len(faces):
+        print("getFaces width: ", faces[0])
+    return faces
+
+
+class Sensei(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+        self.history = {}
+        self.history[USER_ID] = {}
+        self.history[USER_ID][SESSION_ID] = {}
+
+        exitAction = QAction(QIcon('exit.png'), '&Exit', self)
+        exitAction.setShortcut('Ctrl+Q')
+        exitAction.setStatusTip('Exit application')
+        exitAction.triggered.connect(qApp.quit)
+
+        # Create the worker Thread
+        # TODO: See if any advantage to using thread or if timer alone works.
+        # TODO: Compare to workerThread example at
+        # https://stackoverflow.com/questions/31945125/pyqt5-qthread-passing-variables-to-main
+        self.capture = Capture(self)
+
+        self.timer = QTimer(self, timeout=self.calibrate)
+        self.mode = 0  # 0: Initial, 1: Calibrate, 2: Monitor
+        self.trayIcon = QSystemTrayIcon(self)
+        self.trayIcon.setIcon(QIcon('emoticon.png'))
+        self.trayIcon.show()
+
+        menubar = QMenuBar()
+        # TODO: On Mac requires override.
+        fileMenu = menubar.addMenu('&Settings')
+        fileMenu.addAction(exitAction)
+
+    def closeEvent(self, event):
+        """ Override QWidget close event to save history on exit. """
+        # TODO: Replace with CSV method.
+        # if os.path.exists('posture.dat'):
+        #     with open('posture.dat','rb') as saved_history:
+        #         history =pickle.load(saved_history)
+        here = os.path.dirname(os.path.abspath(__file__))
+        directory = os.path.join(here, 'data', str(USER_ID))
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        with open(os.path.join(directory, str(SESSION_ID) + '.dat'), 'wb') as f:
+            pickle.dump(self.history, f)
+
+    def start(self):
+        self.timer.start()
+
+    def stop(self):
+        self.timer.stop()
+
+    def initUI(self):
+        self.val = 0
+        self.looping = True
+        self.pbar = QProgressBar(self)
+        self.pbar.setGeometry(30, 40, 200, 25)
+        self.setGeometry(300, 300, 290, 150)
+        self.setWindowTitle('Posture Monitor')
+
+        self.startButton = QPushButton('Calibrate', self)
+        self.startButton.move(30, 60)
+        self.startButton.clicked.connect(self.calibrate)
+        self.stopButton = QPushButton('Stop', self)
+        self.stopButton.move(30, 60)
+        self.stopButton.clicked.connect(self.endCalibration)
+        self.stopButton.hide()
+        self.settingsButton = QPushButton('Settings', self)
+        self.settingsButton.move(140, 60)
+        self.settingsButton.clicked.connect(self.settings)
+
+        # TODO: Create QWidget panel for Settings with MONITOR_DELAY
+        # and SENSITIVITY options.
+        # layout = QFormLayout()
+        # self.le = QLineEdit()
+
+        self.instructions = QLabel(self)
+        self.instructions.move(40, 20)
+        self.instructions.setText('Sit upright and click \'Calibrate\'')
+        self.instructions.setGeometry(40, 20, 230, 25)
+        self.show()
+
+    def settings(self):
+        global MONITOR_DELAY
+        seconds, ok = QInputDialog.getInt(
+            self, "Delay Settings", "Enter number of seconds to check posture\n(Default = 5)")
+        if ok:
+            MONITOR_DELAY = seconds * 1000
+
+    def endCalibration(self):
+        self.mode = 2  # Monitor mode
+        self.timer.stop()
+        self.stopButton.hide()
+        self.startButton.setText('Recalibrate')
+        self.startButton.show()
+        self.instructions.setText('Sit upright and click \'Recalibrate\'')
+        # Begin monitoring posture.
+        self.timer = QTimer(self, timeout=self.monitor)
+        self.timer.start(MONITOR_DELAY)
+
+    def monitor(self):
+        """ 
+        Grab the picture, find the face, and sent notification 
+        if needed.
+        """
+        photo = self.capture.takePhoto()
+        faces = getFaces(photo)
+        while not len(faces):
+            print("No faces detected.")
+            time.sleep(2)
+            photo = self.capture.takePhoto()
+            faces = getFaces(photo)
+        # Record history for later analyis.
+        # TODO: Make this into cvs-friendly format.
+        self.history[USER_ID][SESSION_ID][datetime.datetime.now().strftime(
+            '%Y-%m-%d_%H-%M-%S')] = faces
+        x, y, w, h = faces[0]
+        if w > self.upright * SENSITIVITY:
+            self.notify(title='Sensei 🙇👊',  # TODO: Add doctor emoji `👨‍⚕️`
+                        subtitle='Whack!',
+                        message='Sit up strait 🙏, grasshopper ⛩',
+                        appIcon='APP_ICON_PATH'
+                        )
+
+    def notify(self, title, subtitle, message, sound=None, appIcon=None):
+        """ 
+        Mac-only and requires `terminal-notifier` to be installed.
+        # TODO: Add check that terminal-notifier is installed.
+        # TODO: Add Linux and windows compatibility.
+        # TODO: Linux example:
+        # TODO: sudo apt-get install libnotify-bin
+        # TODO: from gi.repository import Notify
+        # TODO: Notify.init("App Name")
+        # TODO: Notify.Notification.new("Hi").show()
+        """
+        if 'darwin' in sys.platform:  # Check if on a Mac.
+            t = '-title {!r}'.format(title)
+            s = '-subtitle {!r}'.format(subtitle)
+            m = '-message {!r}'.format(message)
+            snd = '-sound {!r}'.format(sound)
+            i = '-appIcon {!r}'.format(appIcon)
+            os.system(
+                'terminal-notifier {}'.format(' '.join([m, t, s, snd, i])))
+
+    def debug(self):
+        self.val += 1
+        self.pbar.setValue(self.val)
+
+    def calibrate(self):
+        if self.mode == 2:  # Came from 'Recalibrate'
+            # Set up for calibrate mode.
+            self.mode = 1
+            self.stopButton.show()
+            self.startButton.hide()
+            self.instructions.setText('Press \'stop\' when ready')
+            self.timer.stop()
+            self.timer = QTimer(self, timeout=self.calibrate)
+            self.timer.start(CALIBRATION_SAMPLE_RATE)
+        # Interpolate posture information from face.
+        photo = self.capture.takePhoto()
+        faces = getFaces(photo)
+        while not len(faces):
+            print("No faces detected.")
+            time.sleep(2)
+            photo = self.capture.takePhoto()
+            faces = getFaces(photo)
+        x, y, w, h = faces[0]
+        self.upright = w
+        if self.mode == 0:  # Initial mode
+            self.timer.start(CALIBRATION_SAMPLE_RATE)
+            self.startButton.hide()
+            self.stopButton.show()
+            self.instructions.setText('Press \'stop\' when ready')
+            self.mode = 1  # Calibrate mode
+        elif self.mode == 1:
+            # Update posture monitor bar.
+            self.pbar.setValue(self.upright / 4)
 
 
 class Capture(QThread):
 
     def __init__(self, window):
-        self.capturing = False
+        super(Capture, self).__init__(window)
         self.window = window
-        self.cascPath = 'face.xml'
-        self.cascPath = self.pyInstallerResourcePath(self.cascPath)
-        self.faceCascade = cv2.CascadeClassifier(self.cascPath)
-        # cv2.namedWindow('Sensei')
-        # cv2.setMouseCallback('Sensei', self.mouse)
-        # self.cam.set(3, self.screenwidth)
-        # self.cam.set(4, self.screenheight)
-        self.currPosX = None
-        self.currPosY = None
-        self.click_point_x = None
-        self.click_point_y = None
-        self.calibrated_width = []
-        self.width = 0
-        pathtofile = self.pyInstallerResourcePath('emoticon.png')
-        self.emoji = cv2.imread(pathtofile)
-        if self.emoji is None:
-            print "failed to decode image"
-        else:
-            self.emoji = cv2.cvtColor(self.emoji, cv2.COLOR_BGR2GRAY)
-        self.scale = 0.5
-        self.color = (0, 0, 255)
-        self.tickCount = 0
-        self.seconds = 5
-        self.level = 1
-
-    def startCapture(self):
-        print "pressed start"
-        self.stop_event = threading.Event()
-
+        self.capturing = False
         self.cam = cv2.VideoCapture(0)
-        self.screenwidth = 320
-        self.screenheight = 480
-        self.capturing = True
-        self.c_thread = threading.Thread(
-            target=self.play, args=(self.stop_event,))
-        self.c_thread.start()
+        self.cam.set(3, 640)
+        self.cam.set(4, 480)
 
-    def eventListener(self, stop_event):
-        state = True
-        while state and not stop_event.isSet():
-            for i in range(10, 100):
-                time.sleep(i * 0.01)
-                print '.' * i
-
-    def endCapture(self):
-        print "pressed End"
-        self.capturing = False
-
-    def quitCapture(self):
-        print "pressed Quit"
-        self.capturing = False
-        if self.cam is not None:
-            self.cam.release()
-        self.level = -1
-        self.stop_event.set()
-        QCoreApplication.quit()
-        me = os.getpid()
-        print "here"
-        kill_proc_tree(me)
-
-    def mouse(self):
-        self.calibrated_width.append(self.width)
-        self.level = 2
-        print self.calibrated_width[0]
-
-    # def mouse(self, event, x, y, flags, param):
-        # if event == cv2.EVENT_MOUSEMOVE and not self.currPosX:
-        #     self.currPosX, self.currPosY = x, y
-        #     print x, y
-        # if event == cv2.EVENT_LBUTTONUP and not self.click_point_x:
-        #     # click_point_x, click_point_y = x, y
-        #     self.calibrated_width.append(self.width)
-        #     print "width", self.calibrated_width[0]
-
-    def reset_mouse(self):
-        self.click_point_x = -1
-        self.click_point_y = -1
-
-    def notify(self, title, subtitle, message):
-        t = '-title {!r}'.format(title)
-        s = '-subtitle {!r}'.format(subtitle)
-        m = '-message {!r}'.format(message)
-        os.system('terminal-notifier {}'.format(' '.join([m, t, s])))
-
-    def play(self, stop_event):
-        while (self.level == 1):
-            success, frame = self.cam.read()
-            self.tickCount += 1
-
-            # if frameId % multiplier == 0:
-            #     pass
-            # else:
-            #     continue
-            # # Capture frame-by-frame
-            # print "before gray"
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            # mask = np.zeros_like(gray)
-            faces = self.faceCascade.detectMultiScale(
-                gray,
-                scaleFactor=1.1,
-                minNeighbors=2,
-                minSize=(100, 100),
-                #         flags=cv2.cv.CV_HAAR_SCALE_IMAGE
-                flags=0
-            )
-
-            for (x, y, w, h) in faces:
-                self.width = w
-                print "w1", w
-                # cv2.rectangle(mask, (4 * screenwidth / 5, screenheight / 2), (4 *
-                # screenwidth / 5, screenheight / 2), color=244, -1)
-
-                # mask[y:y + h, x:x + w] = 190
-                # mask = cv2.blur(mask, (24, 24))
-                # if self.emoji is not None:
-                # if y + self.emoji.shape[1] < self.screenheight and x +
-                # self.emoji.shape[0] < self.screenwidth:
-
-                #         mask[y:y + self.emoji.shape[0],
-                #              x:x + self.emoji.shape[1]] = self.emoji
-
-                # cv2.putText(mask, "Select proper distance",
-                #             (1 * self.screenwidth / 5 + 10, 2 * self.screenheight / 3 + 20), cv2.FONT_HERSHEY_SIMPLEX, self.scale, color=200)
-                # cv2.putText(mask, np.array_str(w), (x, y + 50),
-                #             cv2.FONT_HERSHEY_SIMPLEX, self.scale, self.color)
-                if len(faces) < 1:
-                    print "no faces found"
-                else:
-                    self.calibrated_width.append(w)
-                # cv2.putText(mask, "Sit back",
-                #             (1 * self.screenwidth / 5 + 10, 2 * self.screenheight / 3 + 20), cv2.FONT_HERSHEY_SIMPLEX, self.scale, color=200)
-            # Display the resulting frame
-            # cv2.imshow('Sensei', mask)
-            if len(self.calibrated_width) > 0:
-                print "to level 2"
-                self.level += 1
-
-        while (self.level == 2):
-            print "==level 2=="
-            self.window.start_button.hide()
-            self.window.callibrate_button.show()
-            self.tickCount += 1
-            # Only sample frame every x ticks
-
-            print "next"
-            self.cam = cv2.VideoCapture(0)
-            success, frame = self.cam.read()
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            self.tickCount += 1
-            faces = self.faceCascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=2, minSize=(100, 100),
-                                                      # flags=cv2.cv.CV_HAAR_SCALE_IMAGE
-                                                      flags=0
-                                                      )
-
-            for (x, y, w, h) in faces:
-                print "w", w, "calibrated_width", self.calibrated_width[0]
-                if w > self.calibrated_width[0] * 1.2:
-                    # Calling the function
-                    print w, self.calibrated_width[0]
-                    self.notify(title='Sensei',
-                                subtitle='Whack!',
-                                message='Sit up strait, grasshopper')
-                else:
-                    # cv2.rectangle(gray, (x, y), (x + w, y + h),
-                    #               (0, 255, 0), 2)
-                    pass
-            time.sleep(10)
-
-    def pyInstallerResourcePath(self, relativePath):
-        basePath = getattr(sys, '_MEIPASS', os.path.abspath('.'))
-        return os.path.join(basePath, relativePath)
+    def takePhoto(self):
+        if not self.cam.isOpened():
+            self.cam.open(0)
+            cv2.waitKey(5)
+        _, frame = self.cam.read()
+        cv2.imwrite('tst.png', frame)
+        cv2.waitKey(1)
+        # Optional - save image.
+        # cv2.imwrite('save.png', frame)
+        return frame
 
 
-class MainWindow(QMainWindow):
+def process_cl_args():
+    """ Process command line arguments to work with QApplication. """
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-d", "--debug", help="Debug mode",
+                        action="store_true")
+    # TODO: Add to `Session ID` to settings menu.
+    parser.add_argument("-s", "--session", help="Session ID", action="store")
+    parser.add_argument("-u", "--user", help="User ID", action="store")
 
-    def __init__(self, parent=None):
-        super(MainWindow, self).__init__(parent)
-        self.initUI()
-
-    def initUI(self):
-        self.window = Window(self)
-        self.setCentralWidget(self.window)
-        self.cvImage = cv2.imread(r'emoticon.png')
-        height, width, byteValue = self.cvImage.shape
-        byteValue = byteValue * width
-        cv2.cvtColor(self.cvImage, cv2.COLOR_BGR2RGB, self.cvImage)
-        self.mQImage = QImage(self.cvImage, width, height,
-                              byteValue, QImage.Format_RGB888)
-
-        # For menu (non-Mac)
-        # exitAction = QtGui.QAction(QtGui.QIcon('exit.png'), '&Exit', self)
-        # exitAction.setShortcut('Ctrl+Q')
-        # exitAction.setStatusTip('Exit application')
-        # exitAction.triggered.connect(QtGui.qApp.quit)
-        self.statusBar()
-        menubar = self.menuBar()
-
-        # menubar.setNativeMenuBar(False)
-        # fileMenu = menubar.addMenu('&File')
-        # fileMenu.addAction(exitAction)
-        # End menu
-
-        self.show()
-        self.raise_()
-        # menubar = self.menuBar()
-        # fileMenu = menubar.addMenu('&File')
-        # fileMenu.addAction(exitAction)
-
-    # def paintEvent(self, _):
-    #     painter = QPainter(self)
-    #     painter.begin(self)
-    #     # painter.drawImage(0, 0, self.mQImage)
-    #     painter.end()
-
-
-class Window(QWidget):
-
-    def __init__(self, parent=None):
-
-        super(Window, self).__init__(parent)
-        layout = QVBoxLayout(self)
-        self.trayIcon = QSystemTrayIcon(self)
-        self.trayIcon.setIcon(QIcon('emoticon.png'))
-        self.trayIcon.setVisible(True)
-        traySignal = "activated(QSystemTrayIcon::ActivationReason)"
-        QObject.connect(self.trayIcon, SIGNAL(
-            traySignal), self.__icon_activated)
-        self.sysTrayMenu = QMenu(self)
-        exitAction = QAction(QIcon('emoticon.png'), '&Exit', self)
-        exitAction.setShortcut('Ctrl+Q')
-        exitAction.setStatusTip('Exit application')
-        exitAction.triggered.connect(qApp.quit)
-
-        act = self.sysTrayMenu.addAction(exitAction)
-        self.setWindowTitle('Sensei - Settings')
-
-        self.capture = Capture(self)
-        self.start_button = QPushButton('Calibrate', self)
-        self.start_button.clicked.connect(self.capture.startCapture)
-
-        self.callibrate_button = QPushButton('Recalibrate', self)
-        self.callibrate_button.clicked.connect(self.capture.mouse)
-        self.callibrate_button.hide()
-
-        self.end_button = QPushButton('End', self)
-        self.end_button.clicked.connect(self.capture.endCapture)
-
-        self.quit_button = QPushButton('Quit', self)
-        self.quit_button.clicked.connect(self.capture.quitCapture)
-
-        layout.addWidget(self.start_button)
-        layout.addWidget(self.callibrate_button)
-        layout.addWidget(self.end_button)
-        layout.addWidget(self.quit_button)
-
-        self.setGeometry(100, 100, 200, 200)
-        self.show()
-        self.raise_()
-
-    def closeEvent(self, event):
-        if self.okayToClose():
-            # user asked for exit
-            self.trayIcon.hide()
-            event.accept()
-        else:
-            #"minimize"
-            self.hide()
-            self.trayIcon.show()
-            event.ignore()
-
-    def __icon_activated(self, reason):
-        if reason == QSystemTrayIcon.DoubleClick:
-            self.show()
-
-    def myEventListener(self, stop_event):
-        state = True
-        while state and not stop_event.isSet():
-            for i in range(10, 100):
-                time.sleep(i * 0.01)
-                print '.' * i
-
-    def cancel(self):
-        self.stop_event.set()
-        self.close()
-
-
-def kill_proc_tree(pid, including_parent=True):
-    parent = psutil.Process(pid)
-    if including_parent:
-        parent.kill()
-
-
-def main():
-    import sys
-    app = QApplication(sys.argv)
-    # window = Window()
-    mainWindow = MainWindow()
-    sys.exit(app.exec_())
-
+    parsed_args, unparsed_args = parser.parse_known_args()
+    return parsed_args, unparsed_args
 
 if __name__ == '__main__':
-    main()
 
-
-# def pyInstallerResourcePath(relativePath):
-#     basePath = getattr(sys, '_MEIPASS', os.path.abspath('.'))
-#     return os.path.join(basePath, relativePath)
-
-# pdb.set_trace()
+    parsed_args, unparsed_args = process_cl_args()
+    SESSION_ID = parsed_args.session
+    USER_ID = parsed_args.user
+    # (Debug mode) Set global debug tracing option.
+    if parsed_args.debug:
+        sys.settrace(trace)
+    # QApplication expects the first argument to be the program name.
+    qt_args = sys.argv[:1] + unparsed_args
+    app = QApplication(qt_args)
+    sensei = Sensei()
+    sys.exit(app.exec_())

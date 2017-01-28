@@ -1,1 +1,8 @@
 *.pyc
+
+/data
+.env
+__pycache__
+*.bak
+*.egg-info
+
