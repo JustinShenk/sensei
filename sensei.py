@@ -9,7 +9,7 @@ import argparse
 import datetime
 
 from PyQt5.QtWidgets import (QPushButton, QApplication, QProgressBar,
-                             QLabel, QInputDialog, QWidget, qApp, QAction, QMenuBar, QSystemTrayIcon)
+                             QLabel, QInputDialog, QWidget, qApp, QAction, QMenuBar, QMenu, QSystemTrayIcon, QMainWindow)
 from PyQt5.QtCore import (QCoreApplication, QObject,
                           QThread, QTimer)
 from PyQt5.QtGui import QIcon
@@ -17,7 +17,7 @@ from PyQt5.QtGui import QIcon
 CASCPATH = 'face.xml'
 FACECASCADE = cv2.CascadeClassifier(CASCPATH)
 # Delay between checking posture in miliseconds.
-MONITOR_DELAY = 5000
+MONITOR_DELAY = 2000
 APP_ICON_PATH = 'posture.png'
 # Notify when user is 1.2 times closer than the calibration distance.
 SENSITIVITY = 1.2
@@ -47,19 +47,15 @@ def getFaces(frame):
     return faces
 
 
-class Sensei(QWidget):
+class Sensei(QMainWindow):
     def __init__(self):
         super().__init__()
+
         self.initUI()
+
         self.history = {}
         self.history[USER_ID] = {}
         self.history[USER_ID][SESSION_ID] = {}
-
-        exitAction = QAction(QIcon('exit.png'), '&Exit', self)
-        exitAction.setShortcut('Ctrl+Q')
-        exitAction.setStatusTip('Exit application')
-        exitAction.triggered.connect(qApp.quit)
-
         # Create the worker Thread
         # TODO: See if any advantage to using thread or if timer alone works.
         # TODO: Compare to workerThread example at
@@ -83,12 +79,14 @@ class Sensei(QWidget):
         # if os.path.exists('posture.dat'):
         #     with open('posture.dat','rb') as saved_history:
         #         history =pickle.load(saved_history)
-        here = os.path.dirname(os.path.abspath(__file__))
-        directory = os.path.join(here, 'data', str(USER_ID))
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-        with open(os.path.join(directory, str(SESSION_ID) + '.dat'), 'wb') as f:
-            pickle.dump(self.history, f)
+        if self.history:
+            here = os.path.dirname(os.path.abspath(__file__))
+            directory = os.path.join(here, 'data', str(USER_ID))
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+            with open(os.path.join(directory, str(SESSION_ID) + '.dat'), 'wb') as f:
+                pickle.dump(self.history, f)
+        qApp.quit()
 
     def start(self):
         self.timer.start()
@@ -97,10 +95,28 @@ class Sensei(QWidget):
         self.timer.stop()
 
     def initUI(self):
-        self.val = 0
-        self.looping = True
+
+        menu = QMenu()
+        # exitAction = QAction(QIcon('exit.png'), '&Exit', self)
+        # exitAction.setStatusTip('Exit Program')
+        # exitAction.setShortcut('Ctrl+Q')
+        # exitAction.setStatusTip('Exit application')
+        # exitAction.triggered.connect(qApp.quit)
+        self.trayIcon = QSystemTrayIcon(self)
+        self.trayIcon.setIcon(QIcon('emoticon.png'))
+        self.trayIcon.setContextMenu(menu)
+        self.trayIcon.show()
+        exitAction = QAction(QIcon('exit.png'), "&Exit", self, shortcut="Ctrl+Q",
+                             triggered=self.closeEvent)
+        changeSettings = QAction(QIcon('exit.png'), "&Settings", self, shortcut="Cmd+,", triggered=self.changeSettings)
+        exitAction.setStatusTip('Exit Program')
+        changeSettings.setStatusTip('Change Settings')
+        menu.addAction(exitAction)
+        menu.addAction(changeSettings)
+        
         self.pbar = QProgressBar(self)
         self.pbar.setGeometry(30, 40, 200, 25)
+        self.pBarValue = 0
         self.setGeometry(300, 300, 290, 150)
         self.setWindowTitle('Posture Monitor')
 
@@ -126,11 +142,15 @@ class Sensei(QWidget):
         self.instructions.setGeometry(40, 20, 230, 25)
         self.show()
 
+    def changeSettings(self):
+        print("changing")
+
     def settings(self):
         global MONITOR_DELAY
         seconds, ok = QInputDialog.getInt(
             self, "Delay Settings", "Enter number of seconds to check posture\n(Default = 5)")
         if ok:
+            seconds = seconds if seconds >= 1 else 0.5
             MONITOR_DELAY = seconds * 1000
 
     def endCalibration(self):
@@ -164,7 +184,7 @@ class Sensei(QWidget):
         if w > self.upright * SENSITIVITY:
             self.notify(title='Sensei 🙇👊',  # TODO: Add doctor emoji `👨‍⚕️`
                         subtitle='Whack!',
-                        message='Sit up strait 🙏, grasshopper ⛩',
+                        message='Sit up strait, grasshopper 🙏⛩',
                         appIcon='APP_ICON_PATH'
                         )
 
@@ -179,6 +199,7 @@ class Sensei(QWidget):
         # TODO: Notify.init("App Name")
         # TODO: Notify.Notification.new("Hi").show()
         """
+        self.trayIcon.showMessage('Title', 'Content')
         if 'darwin' in sys.platform:  # Check if on a Mac.
             t = '-title {!r}'.format(title)
             s = '-subtitle {!r}'.format(subtitle)
@@ -189,8 +210,8 @@ class Sensei(QWidget):
                 'terminal-notifier {}'.format(' '.join([m, t, s, snd, i])))
 
     def debug(self):
-        self.val += 1
-        self.pbar.setValue(self.val)
+        self.pBarValue += 1
+        self.pbar.setValue(self.pBarValue)
 
     def calibrate(self):
         if self.mode == 2:  # Came from 'Recalibrate'
