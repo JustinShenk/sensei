@@ -2,17 +2,20 @@
 # -*- coding: utf-8 -*-
 import os
 import time
-import cv2
 import sys
 import pickle
 import argparse
 import datetime
+# import subprocess
+
+from cv2 import (VideoCapture, waitKey, CascadeClassifier,
+                 cvtColor, COLOR_BGR2GRAY)
 
 from PyQt5.QtWidgets import (QPushButton, QApplication, QProgressBar,
                              QLabel, QGraphicsOpacityEffect, QInputDialog, QWidget, qApp, QAction, QMenuBar, QMenu, QSystemTrayIcon, QMainWindow)
 from PyQt5.QtCore import (QCoreApplication, QObject,
                           QThread, QTimer, QRect, QEasingCurve, QPropertyAnimation)
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QCheckBox
 
 # CASCPATH = "/usr/local/opt/opencv3/share/OpenCV/haarcascades/haarcascade_frontalface_default.xml"
 # FACECASCADE = cv2.CascadeClassifier(CASCPATH)
@@ -26,6 +29,7 @@ CALIBRATION_SAMPLE_RATE = 100
 
 USER_ID = None
 SESSION_ID = None
+TERMINAL_NOTIFIER_INSTALLED = None
 
 
 def getPath(path):
@@ -38,10 +42,12 @@ def getPath(path):
 
     return os.path.join(basePath, path)
 
+
 CASCPATH = getPath('face.xml')
-FACECASCADE = cv2.CascadeClassifier(CASCPATH)
+FACECASCADE = CascadeClassifier(CASCPATH)
 
 APP_ICON_PATH = getPath('posture.png')
+
 
 def trace(frame, event, arg):
     print(("%s, %s:%d" % (event, frame.f_code.co_filename, frame.f_lineno)))
@@ -49,7 +55,7 @@ def trace(frame, event, arg):
 
 
 def getFaces(frame):
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    gray = cvtColor(frame, COLOR_BGR2GRAY)
     faces = FACECASCADE.detectMultiScale(
         gray,
         scaleFactor=1.1,
@@ -59,7 +65,7 @@ def getFaces(frame):
         flags=0
     )
     if len(faces):
-        print("getFaces width: ", faces[0])
+        print("Face found: ", faces[0])
     return faces
 
 
@@ -80,6 +86,22 @@ class Sensei(QMainWindow):
 
         self.timer = QTimer(self, timeout=self.calibrate)
         self.mode = 0  # 0: Initial, 1: Calibrate, 2: Monitor
+        self.checkDependencies()
+
+    def checkDependencies(self):
+        global TERMINAL_NOTIFIER_INSTALLED
+
+        if 'darwin' in sys.platform and not TERMINAL_NOTIFIER_INSTALLED:
+            # FIXME: Add check for Brew installation and installation of
+            # terminal-notifier.
+            self.instructions.setText(
+                'Installing terminal-notifier dependency')
+            print('Installing terminal-notifier is required')
+            # FIXME: This line hangs.
+            # subprocess.call(
+            #     ['brew', 'install', 'terminal-notifier'], stdout=subprocess.PIPE)
+            # TERMINAL_NOTIFIER_INSTALLED = True
+            self.instructions.setText('Sit upright and click \'Calibrate\'')
 
     def closeEvent(self, event):
         """ Override QWidget close event to save history on exit. """
@@ -110,9 +132,16 @@ class Sensei(QMainWindow):
         menu = QMenu()
         iconPath = getPath('exit.png')
         self.trayIcon = QSystemTrayIcon(self)
+        supported = self.trayIcon.supportsMessages()
         self.trayIcon.setIcon(QIcon(iconPath))
         self.trayIcon.setContextMenu(menu)
-        self.trayIcon.show()        
+        self.trayIcon.showMessage('a', 'b')
+        self.trayIcon.show()
+
+        self.postureIcon = QSystemTrayIcon(self)
+        self.postureIcon.setIcon(QIcon(getPath('posture.png')))
+        self.postureIcon.setContextMenu(menu)
+        self.postureIcon.show()
 
         exitAction = QAction(QIcon(iconPath), "&Exit", self, shortcut="Ctrl+Q",
                              triggered=self.closeEvent)
@@ -120,6 +149,7 @@ class Sensei(QMainWindow):
         openAction = QAction(QIcon(iconPath), "&Open",
                              self, triggered=self.showApp)
         openAction.setStatusTip('Open Sensei')
+
         menu.addAction(openAction)
         menu.addSeparator()
         menu.addAction(exitAction)
@@ -159,6 +189,10 @@ class Sensei(QMainWindow):
         self.instructions.move(40, 20)
         self.instructions.setText('Sit upright and click \'Calibrate\'')
         self.instructions.setGeometry(40, 20, 230, 25)
+
+        if not supported:
+            self.instructions.setText(
+                'Error: Notification is not available on your system.')
         self.show()
 
     # # TODO: Add settings panel.
@@ -234,9 +268,11 @@ class Sensei(QMainWindow):
         if w > self.upright * SENSITIVITY:
             self.notify(title='Sensei 🙇👊',  # TODO: Add doctor emoji `👨‍⚕️`
                         subtitle='Whack!',
-                        message='Sit up strait, grasshopper 🙏⛩',
+                        message='Sit up strait 🙏⛩',
                         appIcon='APP_ICON_PATH'
                         )
+
+        # self.trayIcon.toolTip("tool tip")
 
     def notify(self, title, subtitle, message, sound=None, appIcon=None):
         """ 
@@ -252,7 +288,7 @@ class Sensei(QMainWindow):
         # FIXME: Test following line on windows / linux.
         # Doesn't work on Mac and might replace `terminal-notifier` dependency
         # self.trayIcon.showMessage('Title', 'Content')
-        if 'darwin' in sys.platform:  # Check if on a Mac.
+        if 'darwin' in sys.platform and TERMINAL_NOTIFIER_INSTALLED:  # Check if on a Mac.
             t = '-title {!r}'.format(title)
             s = '-subtitle {!r}'.format(subtitle)
             m = '-message {!r}'.format(message)
@@ -260,6 +296,9 @@ class Sensei(QMainWindow):
             i = '-appIcon {!r}'.format(appIcon)
             os.system(
                 'terminal-notifier {}'.format(' '.join([m, t, s, snd, i])))
+        else:
+            self.trayIcon.showMessage(
+                "Sit up strait 🙇👊", "News", QSystemTrayIcon.Information, 4000)
 
     def calibrate(self):
         if self.mode == 2:  # Came from 'Recalibrate'
@@ -298,17 +337,17 @@ class Capture(QThread):
         super(Capture, self).__init__(window)
         self.window = window
         self.capturing = False
-        self.cam = cv2.VideoCapture(0)
+        self.cam = VideoCapture(0)
         self.cam.set(3, 640)
         self.cam.set(4, 480)
 
     def takePhoto(self):
         if not self.cam.isOpened():
             self.cam.open(0)
-            cv2.waitKey(5)
+            waitKey(5)
         _, frame = self.cam.read()
         # cv2.imwrite('tst.png', frame)
-        cv2.waitKey(1)
+        waitKey(1)
         # Optional - save image.
         # cv2.imwrite('save.png', frame)
         return frame
@@ -335,6 +374,10 @@ if __name__ == '__main__':
     # (Debug mode) Set global debug tracing option.
     if parsed_args.debug:
         sys.settrace(trace)
+
+    # Check dependency.
+    TERMINAL_NOTIFIER_INSTALLED = True if os.path.exists(
+        '/usr/local/bin/terminal-notifier') else False
     # QApplication expects the first argument to be the program name.
     qt_args = sys.argv[:1] + unparsed_args
     app = QApplication(qt_args)
