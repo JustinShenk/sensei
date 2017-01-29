@@ -9,9 +9,9 @@ import argparse
 import datetime
 
 from PyQt5.QtWidgets import (QPushButton, QApplication, QProgressBar,
-                             QLabel, QInputDialog, QWidget, qApp, QAction, QMenuBar, QMenu, QSystemTrayIcon, QMainWindow)
+                             QLabel, QGraphicsOpacityEffect, QInputDialog, QWidget, qApp, QAction, QMenuBar, QMenu, QSystemTrayIcon, QMainWindow)
 from PyQt5.QtCore import (QCoreApplication, QObject,
-                          QThread, QTimer)
+                          QThread, QTimer, QRect, QEasingCurve, QPropertyAnimation)
 from PyQt5.QtGui import QIcon
 
 CASCPATH = 'face.xml'
@@ -64,14 +64,6 @@ class Sensei(QMainWindow):
 
         self.timer = QTimer(self, timeout=self.calibrate)
         self.mode = 0  # 0: Initial, 1: Calibrate, 2: Monitor
-        self.trayIcon = QSystemTrayIcon(self)
-        self.trayIcon.setIcon(QIcon('emoticon.png'))
-        self.trayIcon.show()
-
-        menubar = QMenuBar()
-        # TODO: On Mac requires override.
-        fileMenu = menubar.addMenu('&Settings')
-        fileMenu.addAction(exitAction)
 
     def closeEvent(self, event):
         """ Override QWidget close event to save history on exit. """
@@ -108,15 +100,22 @@ class Sensei(QMainWindow):
         self.trayIcon.show()
         exitAction = QAction(QIcon('exit.png'), "&Exit", self, shortcut="Ctrl+Q",
                              triggered=self.closeEvent)
-        changeSettings = QAction(QIcon('exit.png'), "&Settings", self, shortcut="Cmd+,", triggered=self.changeSettings)
         exitAction.setStatusTip('Exit Program')
-        changeSettings.setStatusTip('Change Settings')
+        openAction = QAction(QIcon('exit.png'), "&Open",
+                             self, triggered=self.showApp)
+        openAction.setStatusTip('Open Sensei')
+        menu.addAction(openAction)
+        menu.addSeparator()
         menu.addAction(exitAction)
-        menu.addAction(changeSettings)
-        
+
+        # TODO: Add settings panel.
+        # changeSettings = QAction(QIcon('exit.png'), "&Settings", self, shortcut="Cmd+,", triggered=self.changeSettings)
+        # changeSettings.setStatusTip('Change Settings')
+        # menu.addAction(changeSettings)
+
         self.pbar = QProgressBar(self)
         self.pbar.setGeometry(30, 40, 200, 25)
-        self.pBarValue = 0
+        self.pbarValue = 0
         self.setGeometry(300, 300, 290, 150)
         self.setWindowTitle('Posture Monitor')
 
@@ -131,6 +130,10 @@ class Sensei(QMainWindow):
         self.settingsButton.move(140, 60)
         self.settingsButton.clicked.connect(self.settings)
 
+        self.doneButton = QPushButton('Done', self)
+        self.doneButton.move(30, 60)
+        self.doneButton.hide()
+        self.doneButton.clicked.connect(self.minimize)
         # TODO: Create QWidget panel for Settings with MONITOR_DELAY
         # and SENSITIVITY options.
         # layout = QFormLayout()
@@ -142,8 +145,25 @@ class Sensei(QMainWindow):
         self.instructions.setGeometry(40, 20, 230, 25)
         self.show()
 
-    def changeSettings(self):
-        print("changing")
+    # # TODO: Add settings panel.
+    # def changeSettings(self):
+    #     pass
+
+    def minimize(self):
+        self.reset()
+        self.hide()
+
+    def reset(self):
+        pass
+
+    def showApp(self):
+        self.show()
+        self.raise_()
+        self.doneButton.hide()
+        self.startButton.show()
+        self.pbar.show()
+        self.settingsButton.show()
+        self.activateWindow()
 
     def settings(self):
         global MONITOR_DELAY
@@ -157,12 +177,26 @@ class Sensei(QMainWindow):
         self.mode = 2  # Monitor mode
         self.timer.stop()
         self.stopButton.hide()
-        self.startButton.setText('Recalibrate')
-        self.startButton.show()
+        self.startButton.setText('Recalibrate')  # Keep hidden.
         self.instructions.setText('Sit upright and click \'Recalibrate\'')
+        self.instructions.hide()
+        self.pbar.hide()
+        self.settingsButton.hide()
+
+        self.animateClosing()
+
         # Begin monitoring posture.
         self.timer = QTimer(self, timeout=self.monitor)
         self.timer.start(MONITOR_DELAY)
+
+    def animateClosing(self):
+        self.doneButton.show()
+        animation = QPropertyAnimation(self.doneButton, b"geometry")
+        animation.setDuration(1000)
+        animation.setStartValue(QRect(10, 60, 39, 20))
+        animation.setEndValue(QRect(120, 60, 39, 20))
+        animation.start()
+        self.animation = animation
 
     def monitor(self):
         """ 
@@ -199,7 +233,9 @@ class Sensei(QMainWindow):
         # TODO: Notify.init("App Name")
         # TODO: Notify.Notification.new("Hi").show()
         """
-        self.trayIcon.showMessage('Title', 'Content')
+        # FIXME: Test following line on windows / linux.
+        # Doesn't work on Mac and might replace `terminal-notifier` dependency
+        # self.trayIcon.showMessage('Title', 'Content')
         if 'darwin' in sys.platform:  # Check if on a Mac.
             t = '-title {!r}'.format(title)
             s = '-subtitle {!r}'.format(subtitle)
@@ -208,10 +244,6 @@ class Sensei(QMainWindow):
             i = '-appIcon {!r}'.format(appIcon)
             os.system(
                 'terminal-notifier {}'.format(' '.join([m, t, s, snd, i])))
-
-    def debug(self):
-        self.pBarValue += 1
-        self.pbar.setValue(self.pBarValue)
 
     def calibrate(self):
         if self.mode == 2:  # Came from 'Recalibrate'
