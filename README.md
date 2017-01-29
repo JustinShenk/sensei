@@ -1,4 +1,4 @@
-# Sensei
+# Sensei - *(SEN-say)*
 
 Posture notification software
 

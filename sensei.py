@@ -14,11 +14,12 @@ from PyQt5.QtCore import (QCoreApplication, QObject,
                           QThread, QTimer, QRect, QEasingCurve, QPropertyAnimation)
 from PyQt5.QtGui import QIcon
 
-CASCPATH = 'face.xml'
-FACECASCADE = cv2.CascadeClassifier(CASCPATH)
+# CASCPATH = "/usr/local/opt/opencv3/share/OpenCV/haarcascades/haarcascade_frontalface_default.xml"
+# FACECASCADE = cv2.CascadeClassifier(CASCPATH)
+
 # Delay between checking posture in miliseconds.
 MONITOR_DELAY = 2000
-APP_ICON_PATH = 'posture.png'
+
 # Notify when user is 1.2 times closer than the calibration distance.
 SENSITIVITY = 1.2
 CALIBRATION_SAMPLE_RATE = 100
@@ -26,6 +27,21 @@ CALIBRATION_SAMPLE_RATE = 100
 USER_ID = None
 SESSION_ID = None
 
+
+def getPath(path):
+    """ Get absolute path to resource, works for dev and PyInstaller. """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        basePath = sys._MEIPASS
+    except Exception:
+        basePath = os.path.abspath(".")
+
+    return os.path.join(basePath, path)
+
+CASCPATH = getPath('face.xml')
+FACECASCADE = cv2.CascadeClassifier(CASCPATH)
+
+APP_ICON_PATH = getPath('posture.png')
 
 def trace(frame, event, arg):
     print(("%s, %s:%d" % (event, frame.f_code.co_filename, frame.f_lineno)))
@@ -72,7 +88,10 @@ class Sensei(QMainWindow):
         #     with open('posture.dat','rb') as saved_history:
         #         history =pickle.load(saved_history)
         if self.history:
-            here = os.path.dirname(os.path.abspath(__file__))
+            if hasattr(sys, "_MEIPASS"):  # PyInstaller deployed
+                here = os.path.join(sys._MEIPASS)
+            else:
+                here = os.path.dirname(os.path.realpath(__file__))
             directory = os.path.join(here, 'data', str(USER_ID))
             if not os.path.exists(directory):
                 os.makedirs(directory)
@@ -89,19 +108,16 @@ class Sensei(QMainWindow):
     def initUI(self):
 
         menu = QMenu()
-        # exitAction = QAction(QIcon('exit.png'), '&Exit', self)
-        # exitAction.setStatusTip('Exit Program')
-        # exitAction.setShortcut('Ctrl+Q')
-        # exitAction.setStatusTip('Exit application')
-        # exitAction.triggered.connect(qApp.quit)
+        iconPath = getPath('exit.png')
         self.trayIcon = QSystemTrayIcon(self)
-        self.trayIcon.setIcon(QIcon('emoticon.png'))
+        self.trayIcon.setIcon(QIcon(iconPath))
         self.trayIcon.setContextMenu(menu)
-        self.trayIcon.show()
-        exitAction = QAction(QIcon('exit.png'), "&Exit", self, shortcut="Ctrl+Q",
+        self.trayIcon.show()        
+
+        exitAction = QAction(QIcon(iconPath), "&Exit", self, shortcut="Ctrl+Q",
                              triggered=self.closeEvent)
         exitAction.setStatusTip('Exit Program')
-        openAction = QAction(QIcon('exit.png'), "&Open",
+        openAction = QAction(QIcon(iconPath), "&Open",
                              self, triggered=self.showApp)
         openAction.setStatusTip('Open Sensei')
         menu.addAction(openAction)
@@ -291,7 +307,7 @@ class Capture(QThread):
             self.cam.open(0)
             cv2.waitKey(5)
         _, frame = self.cam.read()
-        cv2.imwrite('tst.png', frame)
+        # cv2.imwrite('tst.png', frame)
         cv2.waitKey(1)
         # Optional - save image.
         # cv2.imwrite('save.png', frame)
@@ -309,6 +325,7 @@ def process_cl_args():
 
     parsed_args, unparsed_args = parser.parse_known_args()
     return parsed_args, unparsed_args
+
 
 if __name__ == '__main__':
 
