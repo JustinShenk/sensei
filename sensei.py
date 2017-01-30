@@ -12,10 +12,10 @@ from cv2 import (VideoCapture, waitKey, CascadeClassifier,
                  cvtColor, COLOR_BGR2GRAY)
 
 from PyQt5.QtWidgets import (QPushButton, QApplication, QProgressBar,
-                             QLabel, QGraphicsOpacityEffect, QInputDialog, QWidget, qApp, QAction, QMenuBar, QMenu, QSystemTrayIcon, QMainWindow)
+                             QLabel, QGraphicsOpacityEffect, QInputDialog, QWidget, qApp, QAction, QMenuBar, QMenu, QSystemTrayIcon, QMainWindow, QCheckBox)
 from PyQt5.QtCore import (QCoreApplication, QObject,
                           QThread, QTimer, QRect, QEasingCurve, QPropertyAnimation)
-from PyQt5.QtGui import QIcon, QCheckBox
+from PyQt5.QtGui import QIcon
 
 # CASCPATH = "/usr/local/opt/opencv3/share/OpenCV/haarcascades/haarcascade_frontalface_default.xml"
 # FACECASCADE = cv2.CascadeClassifier(CASCPATH)
@@ -137,7 +137,6 @@ class Sensei(QMainWindow):
         self.trayIcon.setContextMenu(menu)
         self.trayIcon.showMessage('a', 'b')
         self.trayIcon.show()
-
         self.postureIcon = QSystemTrayIcon(self)
         self.postureIcon.setIcon(QIcon(getPath('posture.png')))
         self.postureIcon.setContextMenu(menu)
@@ -269,10 +268,8 @@ class Sensei(QMainWindow):
             self.notify(title='Sensei 🙇👊',  # TODO: Add doctor emoji `👨‍⚕️`
                         subtitle='Whack!',
                         message='Sit up strait 🙏⛩',
-                        appIcon='APP_ICON_PATH'
+                        appIcon=APP_ICON_PATH
                         )
-
-        # self.trayIcon.toolTip("tool tip")
 
     def notify(self, title, subtitle, message, sound=None, appIcon=None):
         """ 
@@ -288,7 +285,7 @@ class Sensei(QMainWindow):
         # FIXME: Test following line on windows / linux.
         # Doesn't work on Mac and might replace `terminal-notifier` dependency
         # self.trayIcon.showMessage('Title', 'Content')
-        if 'darwin' in sys.platform and TERMINAL_NOTIFIER_INSTALLED:  # Check if on a Mac.
+        if 'darwin' in sys.platform and TERMINAL_NOTIFIER_INSTALLED:  # Check if on a Mac.        
             t = '-title {!r}'.format(title)
             s = '-subtitle {!r}'.format(subtitle)
             m = '-message {!r}'.format(message)
