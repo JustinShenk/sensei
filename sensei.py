@@ -18,7 +18,7 @@ from PyQt5.QtCore import (QCoreApplication, QObject,
 from PyQt5.QtGui import QIcon
 
 # CASCPATH = "/usr/local/opt/opencv3/share/OpenCV/haarcascades/haarcascade_frontalface_default.xml"
-# FACECASCADE = cv2.CascadeClassifier(CASCPATH)
+# FACECASCADE = CascadeClassifier(CASCPATH)
 
 # Delay between checking posture in miliseconds.
 MONITOR_DELAY = 2000
@@ -39,11 +39,13 @@ def getPath(path):
         basePath = sys._MEIPASS
     except Exception:
         basePath = os.path.abspath(".")
+    print("Paths:", path, os.path.join(basePath, path))
 
     return os.path.join(basePath, path)
 
 
 CASCPATH = getPath('face.xml')
+# CASCPATH = getPath('haarcascade_eye_tree_eyeglasses.xml')
 FACECASCADE = CascadeClassifier(CASCPATH)
 
 APP_ICON_PATH = getPath('posture.png')
@@ -115,9 +117,11 @@ class Sensei(QMainWindow):
             else:
                 here = os.path.dirname(os.path.realpath(__file__))
             directory = os.path.join(here, 'data', str(USER_ID))
+            # directory = os.path.join(here, 'data', 'test')
             if not os.path.exists(directory):
                 os.makedirs(directory)
-            with open(os.path.join(directory, str(SESSION_ID) + '.dat'), 'wb') as f:
+            with open(os.path.join(directory, str(SESSION_ID) + '.dat'),
+                      'wb') as f:
                 pickle.dump(self.history, f)
         qApp.quit()
 
@@ -248,8 +252,8 @@ class Sensei(QMainWindow):
         self.animation = animation
 
     def monitor(self):
-        """ 
-        Grab the picture, find the face, and sent notification 
+        """
+        Grab the picture, find the face, and send notification
         if needed.
         """
         photo = self.capture.takePhoto()
@@ -272,7 +276,7 @@ class Sensei(QMainWindow):
                         )
 
     def notify(self, title, subtitle, message, sound=None, appIcon=None):
-        """ 
+        """
         Mac-only and requires `terminal-notifier` to be installed.
         # TODO: Add check that terminal-notifier is installed.
         # TODO: Add Linux and windows compatibility.
@@ -285,7 +289,7 @@ class Sensei(QMainWindow):
         # FIXME: Test following line on windows / linux.
         # Doesn't work on Mac and might replace `terminal-notifier` dependency
         # self.trayIcon.showMessage('Title', 'Content')
-        if 'darwin' in sys.platform and TERMINAL_NOTIFIER_INSTALLED:  # Check if on a Mac.        
+        if 'darwin' in sys.platform and TERMINAL_NOTIFIER_INSTALLED:  # Check if on a Mac.
             t = '-title {!r}'.format(title)
             s = '-subtitle {!r}'.format(subtitle)
             m = '-message {!r}'.format(message)
@@ -356,8 +360,8 @@ def process_cl_args():
     parser.add_argument("-d", "--debug", help="Debug mode",
                         action="store_true")
     # TODO: Add to `Session ID` to settings menu.
-    parser.add_argument("-s", "--session", help="Session ID", action="store")
-    parser.add_argument("-u", "--user", help="User ID", action="store")
+    parser.add_argument("--session", help="Session ID", action="store")
+    parser.add_argument("--user", help="User ID", action="store")
 
     parsed_args, unparsed_args = parser.parse_known_args()
     return parsed_args, unparsed_args
