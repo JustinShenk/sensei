@@ -72,14 +72,16 @@ def getFaces(frame):
 
 
 class Sensei(QMainWindow):
+
     def __init__(self):
         super().__init__()
 
         self.initUI()
-
+        print("meta:", USER_ID, SESSION_ID)
         self.history = {}
         self.history[USER_ID] = {}
         self.history[USER_ID][SESSION_ID] = {}
+        self.history[USER_ID][SESSION_ID]['sensitivty'] = SENSITIVITY
         # Create the worker Thread
         # TODO: See if any advantage to using thread or if timer alone works.
         # TODO: Compare to workerThread example at
@@ -221,7 +223,7 @@ class Sensei(QMainWindow):
     def settings(self):
         global MONITOR_DELAY
         seconds, ok = QInputDialog.getInt(
-            self, "Delay Settings", "Enter number of seconds to check posture\n(Default = 5)")
+            self, "Delay Settings", "Enter number of seconds to check posture\n(Default = 2)")
         if ok:
             seconds = seconds if seconds >= 1 else 0.5
             MONITOR_DELAY = seconds * 1000
@@ -253,7 +255,7 @@ class Sensei(QMainWindow):
 
     def monitor(self):
         """
-        Grab the picture, find the face, and send notification
+        Grab the picture, find the face, and sent notification
         if needed.
         """
         photo = self.capture.takePhoto()
@@ -321,6 +323,9 @@ class Sensei(QMainWindow):
             faces = getFaces(photo)
         x, y, w, h = faces[0]
         self.upright = w
+        self.history[USER_ID][SESSION_ID][datetime.datetime.now().strftime(
+            '%Y-%m-%d_%H-%M-%S') + ': calibration'] = self.upright
+        self.history["upright_face_width"] = self.upright
         if self.mode == 0:  # Initial mode
             self.timer.start(CALIBRATION_SAMPLE_RATE)
             self.startButton.hide()
