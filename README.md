@@ -11,7 +11,7 @@ Clone the repository and run it
 
 ## Demo
 
-[Video demo (26 MB)](https://github.com/JustinShenk/sensei/blob/master/demo-med-res.mov?raw=true)
+[Video demo (26 MB)](https://github.com/JustinShenk/sensei/blob/master/sensei-demo.mov?raw=true)
 
 ## Usage
 
