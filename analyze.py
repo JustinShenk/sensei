@@ -3,6 +3,7 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 
+from glob import glob
 from datetime import datetime
 
 
@@ -44,6 +45,15 @@ def get_distances(data):
     # Sort readings by time to restore order
     time_objects, dists = zip(*sorted(zip(time_objects, widths)))
     return time_object, dists
+
+
+def load_data_files(data_folder_path='data'):
+    data_folder = os.path.join(os.getcwd(), data_folder_path)
+    files = []
+    for file in glob(data_folder + "/*/*"):
+        if '.dat' in file:
+            files.append(file)
+    return files
 
 
 def plot(time_objects, dists):
