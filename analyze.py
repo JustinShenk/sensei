@@ -34,13 +34,13 @@ def get_distances(data):
         Tuple - (time_object, distances)
 
     '''
-    distances = []
+    widths = []
 
     for k, v in data.items():
         if type(v).__module__ == 'numpy':
             # Convert strings to datetime object
             time_object = datetime.strptime(k, '%Y-%m-%d_%H-%M-%S')
-            distances.append((time_object, v[0][2]))
+            widths.append(v[0][2])
 
     # Sort readings by time to restore order
     time_objects, dists = zip(*sorted(zip(time_objects, widths)))
