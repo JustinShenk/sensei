@@ -1,17 +1,17 @@
 # Sensei - *(SEN-say)*
 
-Posture notification software
+Posture monitor and notification software, for experimentation or self-monitoring.
 
 ## Installation
 
-NOTE: Requires Mac with terminal-notifier installed and PyQt5.
+NOTE: Requires Mac with terminal-notifier installed, PyQt5 and OpenCV.
 
 Clone the repository and run it
 `python sensei.py`
 
 ## Demo
 
-[Video demo (26 MB)](https://github.com/JustinShenk/sensei/blob/master/demo-med-res.mov?raw=true)
+[Video demo (26 MB)](https://github.com/JustinShenk/sensei/blob/master/sensei-demo.mov?raw=true)
 
 ## Usage
 
