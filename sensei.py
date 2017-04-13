@@ -72,6 +72,7 @@ def getFaces(frame):
 
 
 class Sensei(QMainWindow):
+
     def __init__(self):
         super().__init__()
 
@@ -80,6 +81,8 @@ class Sensei(QMainWindow):
         self.history = {}
         self.history[USER_ID] = {}
         self.history[USER_ID][SESSION_ID] = {}
+        self.history[USER_ID][SESSION_ID][datetime.datetime.now().strftime(
+            '%Y-%m-%d_%H-%M-%S')] = "sensitvity: " + str(SENSITIVITY)
         # Create the worker Thread
         # TODO: See if any advantage to using thread or if timer alone works.
         # TODO: Compare to workerThread example at
@@ -235,7 +238,8 @@ class Sensei(QMainWindow):
         self.instructions.hide()
         self.pbar.hide()
         self.settingsButton.hide()
-
+        self.history[USER_ID][SESSION_ID][datetime.datetime.now().strftime(
+            '%Y-%m-%d_%H-%M-%S')] = "baseline: " + str(self.upright)
         self.animateClosing()
 
         # Begin monitoring posture.
