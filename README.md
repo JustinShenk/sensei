@@ -1,4 +1,4 @@
-# Sensei - *(SEN-say)*
+# Sensei - *(SEN-say)*🙇👊
 
 Posture monitor and notification software, for experimentation or self-monitoring.
 
