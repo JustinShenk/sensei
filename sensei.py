@@ -82,7 +82,7 @@ class Sensei(QMainWindow):
         self.history[USER_ID] = {}
         self.history[USER_ID][SESSION_ID] = {}
         self.history[USER_ID][SESSION_ID][datetime.datetime.now().strftime(
-            '%Y-%m-%d_%H-%M-%S')] = "sensitvity: " + str(SENSITIVITY)
+            '%Y-%m-%d_%H-%M-%S')] = "sensitivity: " + str(SENSITIVITY)
         # Create the worker Thread
         # TODO: See if any advantage to using thread or if timer alone works.
         # TODO: Compare to workerThread example at
