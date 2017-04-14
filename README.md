@@ -2,12 +2,15 @@
 
 Posture monitor and notification software, for experimentation or self-monitoring.
 
-## Installation
+## Installation via [Homebrew](https://github.com/Homebrew/homebrew)
 
 NOTE: Requires Mac with terminal-notifier installed, PyQt5 and OpenCV.
 
+```$ brew install terminal-notifier pyqt5 opencv3 --with-contrib --with-python3 --HEAD```
+
 Clone the repository and run it
-`python sensei.py`
+
+```$ python sensei.py```
 
 ## Demo
 
