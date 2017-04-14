@@ -14,7 +14,7 @@ Clone the repository and run it
 
 ## Demo
 
-[Video demo (26 MB)](https://github.com/JustinShenk/sensei/blob/master/sensei-demo.mov?raw=true)
+![Usage demo](images/demo.gif)
 
 ## Usage
 
