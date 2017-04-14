@@ -23,6 +23,12 @@ Click 'Calibrate'
 
 You will receive notifications if you are too close.
 
+## Analyze Your Data
+
+Preprocess and visualize your data using the [notebook](Analyze_Data.ipynb).
+
+![Sample plot of your data](images/sample_plot.png)
+
 ## Contributing
 
 1. Fork it!
