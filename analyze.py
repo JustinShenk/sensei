@@ -1,6 +1,8 @@
 import os
 import pickle
 import datetime
+import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 
 from glob import glob
@@ -79,7 +81,7 @@ def get_subject(data, subject_id='20', trial_number='1'):
             return d[subject_id][trial_number]
 
 
-def remove_outliers(time_delta, widths, z_threshold=2):
+def remove_outliers(time_delta, widths, z_threshold=3):
     '''Remove outliers with z-score of `z_threshold` and above
     from `time_delta` and `widths`.
     '''
@@ -92,10 +94,12 @@ def remove_outliers(time_delta, widths, z_threshold=2):
     return time_keep, width_keep
 
 
-def plot_subjects(data, subjects, exclude_outliers=False):
+def plot_subjects(data, meta, exclude_outliers=False, z_threshold=3):
+    subjects = meta.keys()
     subject_count = len(subjects)
     fig = plt.figure(figsize=(8, subject_count * 3.4))
     for ind, subject in enumerate(subjects):
+        conditions = meta[subject]
         ax = fig.add_subplot(subject_count, 1, ind + 1)
         subject_data = get_subject(data, subject_id=subject)
         baseline = get_baseline(subject_data)
@@ -104,14 +108,12 @@ def plot_subjects(data, subjects, exclude_outliers=False):
         if remove_outliers:
             time_delta, widths = remove_outliers(time_delta, widths)
         title = """Head Proximity to Computer over Time
-            {}Subject ID: {}, Condition: {}, Timepoints: {} 
-            """.format('Excluding Outliers (z = ' +  str(z_threshold) + ') '
+            {}\nSubject ID: {}, Condition: {}, Timepoints: {}
+            """.format('Excluding Outliers (z = ' + str(z_threshold) + ') '
                        if exclude_outliers else '', subject,
-                       subject_meta[subject], len(time_delta))
+                       conditions, len(time_delta))
 
         plot_it(ax, time_delta, widths, baseline=baseline, title=title)
-
-    plt.tight_layout()
     plt.show()
 
 
@@ -123,9 +125,19 @@ def draw_warnings(ax, x, y, baseline):
                marker='*', label='Notification')
 
 
-def plot_it(ax, x, y, subject_id=None, baseline=None, title='Head Proximity to Computer over Time\n'
-            'Subject ID: {} Conditions: {}'.format(
-                subject_id, subject_meta[int(subject_id)])):
+def timeTicks(x, pos):
+    minutes, seconds = divmod(int(x), 60)
+    return '{}:{:02}'.format(minutes, seconds)
+
+
+formatter = matplotlib.ticker.FuncFormatter(timeTicks)
+
+
+def plot_it(ax, x, y, subject_id=None, conditions=None, baseline=None, title=None):
+    if title == None:
+        title = 'Head Proximity to Computer over Time\n'
+        'Subject ID: {} Conditions: {}'.format(
+            subject_id, conditions)
     ax.set_xlabel('Time (minutes)')
     ax.set_ylabel('Proximity')
     ax.set_title(title)
@@ -139,10 +151,7 @@ def plot_it(ax, x, y, subject_id=None, baseline=None, title='Head Proximity to C
     draw_warnings(ax, x, y, baseline)
     ax.plot(x, y, 'b', linewidth=1)
     ax.legend(loc=1, fontsize=8)
-    plt.setp(ax1.xaxis.get_majorticklabels(), rotation=25)
+    plt.setp(ax.xaxis.get_majorticklabels(), rotation=25)
     plt.gcf().autofmt_xdate()
-
-
-def timeTicks(x, pos):
-    minutes, seconds = divmod(int(x), 60)
-    return '{}:{:02}'.format(minutes, seconds)
+    plt.tight_layout()
+    plt.show()
