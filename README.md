@@ -1,6 +1,6 @@
 # Sensei - *(SEN-say)*🙇👊
 
-Posture monitor and notification software, for experimentation or self-monitoring.
+End-to-end posture monitor and notification software, for experimentation or self-monitoring, with data analysis scripts.
 
 ## Installation via [Homebrew](https://github.com/Homebrew/homebrew)
 
