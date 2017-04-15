@@ -7,3 +7,4 @@ __pycache__
 *.bak
 *.egg-info
 
+meta_data.json
