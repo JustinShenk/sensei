@@ -292,7 +292,7 @@ class Sensei(QMainWindow):
                 'terminal-notifier {}'.format(' '.join([m, t, s, snd, i])))
         else:
             self.trayIcon.showMessage(
-                "Sit up strait 🙇👊", "News", QSystemTrayIcon.Information, 4000)
+                "Notice 🙇👊", "Keep strait posture", QSystemTrayIcon.Information, 4000)
 
     def calibrate(self):
         if self.mode == 2:  # Came from 'Recalibrate'
@@ -312,6 +312,10 @@ class Sensei(QMainWindow):
             time.sleep(2)
             photo = self.capture.takePhoto()
             faces = getFaces(photo)
+        # TODO: Focus on user's face rather than artifacts of face detector of others
+        # on camera
+        # if len(faces) > 1:
+            # print(faces) # Take argmax of faces
         x, y, w, h = faces[0]
         self.upright = w
         self.history[USER_ID][SESSION_ID][datetime.datetime.now().strftime(
@@ -326,6 +330,7 @@ class Sensei(QMainWindow):
         elif self.mode == 1:
             # Update posture monitor bar.
             self.pbar.setValue(self.upright / 4)
+            time.sleep(0.4)
 
 
 class Capture(QThread):
