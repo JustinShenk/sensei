@@ -6,15 +6,16 @@ import sys
 import pickle
 import argparse
 import datetime
+from PyInstallerUtils import pyInstallerResourcePath
 # import subprocess
 
 from cv2 import (VideoCapture, waitKey, CascadeClassifier,
                  cvtColor, COLOR_BGR2GRAY)
 
 from PyQt5.QtWidgets import (QPushButton, QApplication, QProgressBar,
-                             QLabel, QGraphicsOpacityEffect, QInputDialog, QWidget, qApp, QAction, QMenuBar, QMenu, QSystemTrayIcon, QMainWindow, QCheckBox)
-from PyQt5.QtCore import (QCoreApplication, QObject,
-                          QThread, QTimer, QRect, QEasingCurve, QPropertyAnimation)
+                             QLabel, QInputDialog, qApp, QAction, QMenu,
+                             QSystemTrayIcon, QMainWindow)
+from PyQt5.QtCore import (QThread, QTimer, QRect, QPropertyAnimation)
 from PyQt5.QtGui import QIcon
 
 # CASCPATH = "/usr/local/opt/opencv3/share/OpenCV/haarcascades/haarcascade_frontalface_default.xml"
@@ -31,24 +32,12 @@ USER_ID = None
 SESSION_ID = None
 TERMINAL_NOTIFIER_INSTALLED = None
 
+CASCPATH = 'face.xml'
+# CASCPATH = pyInstallerResourcePath('haarcascade_eye_tree_eyeglasses.xml')
+FACECASCADE = CascadeClassifier(pyInstallerResourcePath(CASCPATH))
+print("path:", pyInstallerResourcePath(CASCPATH))
 
-def getPath(path):
-    """ Get absolute path to resource, works for dev and PyInstaller. """
-    try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        basePath = sys._MEIPASS
-    except Exception:
-        basePath = os.path.abspath(".")
-    print("Paths:", path, os.path.join(basePath, path))
-
-    return os.path.join(basePath, path)
-
-
-CASCPATH = getPath('face.xml')
-# CASCPATH = getPath('haarcascade_eye_tree_eyeglasses.xml')
-FACECASCADE = CascadeClassifier(CASCPATH)
-
-APP_ICON_PATH = getPath('posture.png')
+APP_ICON_PATH = pyInstallerResourcePath('posture.png')
 
 
 def trace(frame, event, arg):
@@ -137,7 +126,7 @@ class Sensei(QMainWindow):
     def initUI(self):
 
         menu = QMenu()
-        iconPath = getPath('exit.png')
+        iconPath = pyInstallerResourcePath('exit.png')
         self.trayIcon = QSystemTrayIcon(self)
         supported = self.trayIcon.supportsMessages()
         self.trayIcon.setIcon(QIcon(iconPath))
@@ -145,7 +134,7 @@ class Sensei(QMainWindow):
         self.trayIcon.showMessage('a', 'b')
         self.trayIcon.show()
         self.postureIcon = QSystemTrayIcon(self)
-        self.postureIcon.setIcon(QIcon(getPath('posture.png')))
+        self.postureIcon.setIcon(QIcon(pyInstallerResourcePath('posture.png')))
         self.postureIcon.setContextMenu(menu)
         self.postureIcon.show()
 
@@ -374,15 +363,13 @@ def process_cl_args():
     return parsed_args, unparsed_args
 
 
-if __name__ == '__main__':
-
+def main():
     parsed_args, unparsed_args = process_cl_args()
     SESSION_ID = parsed_args.session
     USER_ID = parsed_args.user
     # (Debug mode) Set global debug tracing option.
     if parsed_args.debug:
         sys.settrace(trace)
-
     # Check dependency.
     TERMINAL_NOTIFIER_INSTALLED = True if os.path.exists(
         '/usr/local/bin/terminal-notifier') else False
@@ -391,3 +378,6 @@ if __name__ == '__main__':
     app = QApplication(qt_args)
     sensei = Sensei()
     sys.exit(app.exec_())
+
+if __name__ == '__main__':
+    main()
