@@ -1,4 +1,7 @@
 .idea
+.ipynb_checkpoints/
+build
+dist
 *.pyc
 .DS_Store
 /data
