@@ -373,6 +373,7 @@ def process_cl_args():
 
 
 def main():
+
     parsed_args, unparsed_args = process_cl_args()
     SESSION_ID = parsed_args.session
     USER_ID = parsed_args.user
