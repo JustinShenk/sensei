@@ -31,6 +31,9 @@ MONITOR_DELAY = 2000
 SENSITIVITY = 1.2
 CALIBRATION_SAMPLE_RATE = 100
 
+# Sound setting
+soundOn = True
+
 USER_ID = None
 SESSION_ID = None
 TERMINAL_NOTIFIER_INSTALLED = None
@@ -107,6 +110,8 @@ class Sensei(QMainWindow):
         aboutDialog.githubButton.clicked.connect(
             self.openGitHub)
         dialog.exec_()
+        self.trayIcon.showMessage(
+            "Notice 🙇👊", "Keep strait posture", QSystemTrayIcon.Information, 4000)
 
     def closeEvent(self, event):
         """ Override QWidget close event to save history on exit. """
@@ -157,11 +162,16 @@ class Sensei(QMainWindow):
                                     self, triggered=self.showApp)
         # preferencesAction.setStatusTip('Sensei Preferences')
         aboutAction = QAction("&About Sensei", self, triggered=self.aboutEvent)
+
         menu.addAction(aboutAction)
         menu.addSeparator()
         menu.addAction(preferencesAction)
         menu.addSeparator()
         menu.addAction(exitAction)
+        optionsMenu = menu.addMenu('&Options')
+        soundToggleAction = QAction(
+            "Toggle Sound", self, triggered=self.toggleSound)
+        optionsMenu.addAction(soundToggleAction)
 
         # TODO: Add settings panel.
         # changeSettings = QAction(QIcon('exit.png'), "&Settings", self, shortcut="Cmd+,", triggered=self.changeSettings)
@@ -204,9 +214,9 @@ class Sensei(QMainWindow):
                 'Error: Notification is not available on your system.')
         self.show()
 
-    # # TODO: Add settings panel.
-    # def changeSettings(self):
-    #     pass
+    def toggleSound(self):
+        global soundOn  # FIXME: Replace with preferences dictionary or similar
+        soundOn = not soundOn
 
     def minimize(self):
         self.reset()
