@@ -12,3 +12,4 @@ __pycache__
 
 meta_data.json
 meta_data.p
+.env

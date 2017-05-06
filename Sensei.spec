@@ -16,7 +16,7 @@ a = Analysis(['Sensei.py'],
              cipher=block_cipher)
 
 a.datas += [('posture.png', 'posture.png', 'DATA')]
-a.datas += [('exit.png', 'exit.png', 'DATA')]
+a.datas += [('meditate.png', 'meditate.png', 'DATA')]
 a.datas += [('face.xml', 'face.xml', 'DATA')]
 pyz = PYZ(a.pure, a.zipped_data,
           cipher=block_cipher)
@@ -27,7 +27,7 @@ exe = EXE(pyz,
           name='Sensei',
           debug=False,
           strip=False,
-          upx=True,
+          upx=False,
           console=False,
           icon='meditate.icns')
 coll = COLLECT(exe,
@@ -35,11 +35,14 @@ coll = COLLECT(exe,
                a.zipfiles,
                a.datas,
                strip=False,
-               upx=True,
+               upx=False,
                name='Sensei')
 app = BUNDLE(coll,
              name='Sensei.app',
-             icon='meditate.icns',
+	     icon='meditate.icns',
              bundle_identifier=None,
-             info_plist={'NSHighResolutionCapable': 'True'}
+             info_plist={'NSHighResolutionCapable': 'True',
+             'LSUIElement': '1',
+             'LSBackgroundOnly': '1'
+             }
              )
