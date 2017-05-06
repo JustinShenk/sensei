@@ -7,6 +7,7 @@ import pickle
 import argparse
 import datetime
 
+from aboutGUI import Ui_AboutWindow
 from PyInstallerUtils import pyInstallerResourcePath
 
 # import subprocess
@@ -16,7 +17,7 @@ from cv2 import (VideoCapture, waitKey, CascadeClassifier,
 
 from PyQt5.QtWidgets import (QPushButton, QApplication, QProgressBar,
                              QLabel, QInputDialog, qApp, QAction, QMenu,
-                             QSystemTrayIcon, QMainWindow)
+                             QSystemTrayIcon, QMainWindow, QDialog)
 from PyQt5.QtCore import (QThread, QTimer, QRect, QPropertyAnimation)
 from PyQt5.QtGui import QIcon
 
@@ -99,6 +100,14 @@ class Sensei(QMainWindow):
             # TERMINAL_NOTIFIER_INSTALLED = True
             self.instructions.setText('Sit upright and click \'Calibrate\'')
 
+    def aboutEvent(self, event):
+        dialog = QDialog()
+        aboutDialog = Ui_AboutWindow()
+        aboutDialog.setupUi(dialog)
+        aboutDialog.githubButton.clicked.connect(
+            self.openGitHub)
+        dialog.exec_()
+
     def closeEvent(self, event):
         """ Override QWidget close event to save history on exit. """
         # TODO: Replace with CSV method.
@@ -142,14 +151,15 @@ class Sensei(QMainWindow):
         self.postureIcon.setContextMenu(menu)
         self.postureIcon.show()
 
-        exitAction = QAction(QIcon(iconPath), "&Exit", self, shortcut="Ctrl+Q",
+        exitAction = QAction("&Quit Sensei", self, shortcut="Ctrl+Q",
                              triggered=self.closeEvent)
-        exitAction.setStatusTip('Exit Program')
-        openAction = QAction(QIcon(iconPath), "&Open",
-                             self, triggered=self.showApp)
-        openAction.setStatusTip('Open Sensei')
-
-        menu.addAction(openAction)
+        preferencesAction = QAction("&Preferences...",
+                                    self, triggered=self.showApp)
+        # preferencesAction.setStatusTip('Sensei Preferences')
+        aboutAction = QAction("&About Sensei", self, triggered=self.aboutEvent)
+        menu.addAction(aboutAction)
+        menu.addSeparator()
+        menu.addAction(preferencesAction)
         menu.addSeparator()
         menu.addAction(exitAction)
 
@@ -336,6 +346,10 @@ class Sensei(QMainWindow):
             self.pbar.setValue(self.upright / 4)
             time.sleep(0.05)
 
+    def openGitHub(self):
+        import webbrowser
+        webbrowser.open_new_tab('https://github.com/JustinShenk/sensei')
+
 
 class Capture(QThread):
 
@@ -359,7 +373,7 @@ class Capture(QThread):
         return frame
 
 
-def process_cl_args():
+def processCLArgs():
     """ Process command line arguments to work with QApplication. """
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--debug", help="Debug mode",
@@ -374,7 +388,7 @@ def process_cl_args():
 
 def main():
 
-    parsed_args, unparsed_args = process_cl_args()
+    parsed_args, unparsed_args = processCLArgs()
     SESSION_ID = parsed_args.session
     USER_ID = parsed_args.user
     # (Debug mode) Set global debug tracing option.
