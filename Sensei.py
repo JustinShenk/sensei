@@ -6,7 +6,9 @@ import sys
 import pickle
 import argparse
 import datetime
+
 from PyInstallerUtils import pyInstallerResourcePath
+
 # import subprocess
 
 from cv2 import (VideoCapture, waitKey, CascadeClassifier,
@@ -126,7 +128,9 @@ class Sensei(QMainWindow):
     def initUI(self):
 
         menu = QMenu()
-        iconPath = pyInstallerResourcePath('exit.png')
+        # Use Buddha in place of smiley face
+        # iconPath = pyInstallerResourcePath('exit-gray.png')
+        iconPath = pyInstallerResourcePath('meditate.png')
         self.trayIcon = QSystemTrayIcon(self)
         supported = self.trayIcon.supportsMessages()
         self.trayIcon.setIcon(QIcon(iconPath))
@@ -330,7 +334,7 @@ class Sensei(QMainWindow):
         elif self.mode == 1:
             # Update posture monitor bar.
             self.pbar.setValue(self.upright / 4)
-            time.sleep(0.4)
+            time.sleep(0.05)
 
 
 class Capture(QThread):
@@ -383,6 +387,7 @@ def main():
     app = QApplication(qt_args)
     sensei = Sensei()
     sys.exit(app.exec_())
+
 
 if __name__ == '__main__':
     main()
