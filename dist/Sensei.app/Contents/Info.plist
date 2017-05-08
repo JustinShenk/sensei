@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict><key>CFBundleExecutable</key>
+<string>MacOS/Sensei</string>
+<key>CFBundleIdentifier</key>
+<string>Sensei</string>
+<key>LSUIElement</key>
+<string>1</string>
+<key>CFBundleDisplayName</key>
+<string>Sensei</string>
+<key>CFBundleInfoDictionaryVersion</key>
+<string>6.0</string>
+<key>CFBundleName</key>
+<string>Sensei</string>
+<key>CFBundleShortVersionString</key>
+<string>0.0.0</string>
+<key>CFBundlePackageType</key>
+<string>APPL</string>
+<key>CFBundleIconFile</key>
+<string>meditate.icns</string>
+<key>LSBackgroundOnly</key>
+<string>1</string>
+<key>NSHighResolutionCapable</key>
+<string>True</string>
+</dict>
+</plist>
