@@ -8,6 +8,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class Ui_AboutWindow(object):
     def setupUi(self, AboutWindow):
         AboutWindow.setObjectName("AboutWindow")
@@ -44,7 +45,8 @@ class Ui_AboutWindow(object):
         self.horizontalLayoutWidget = QtWidgets.QWidget(AboutWindow)
         self.horizontalLayoutWidget.setGeometry(QtCore.QRect(10, 100, 292, 80))
         self.horizontalLayoutWidget.setObjectName("horizontalLayoutWidget")
-        self.horizontalLayout = QtWidgets.QHBoxLayout(self.horizontalLayoutWidget)
+        self.horizontalLayout = QtWidgets.QHBoxLayout(
+            self.horizontalLayoutWidget)
         self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.supportButton = QtWidgets.QPushButton(self.horizontalLayoutWidget)
@@ -67,9 +69,11 @@ class Ui_AboutWindow(object):
         _translate = QtCore.QCoreApplication.translate
         AboutWindow.setWindowTitle(_translate("AboutWindow", "About Sensei"))
         self.label.setText(_translate("AboutWindow", "Sensei"))
-        self.label_2.setText(_translate("AboutWindow", "Copyright 2016-2017 Justin Shenk\n"
-"Version 0.1"))
-        self.updatesButton.setText(_translate("AboutWindow", "Check for updates"))
+        self.label_2.setText(
+            _translate("AboutWindow", "Copyright 2016-2017 Justin Shenk\n"
+                       "Version 0.1"))
+        self.updatesButton.setText(
+            _translate("AboutWindow", "Check for updates"))
         self.supportButton.setText(_translate("AboutWindow", "Support Sensei"))
-        self.githubButton.setText(_translate("AboutWindow", "Visit GitHub Repo"))
-
+        self.githubButton.setText(
+            _translate("AboutWindow", "Visit GitHub Repo"))

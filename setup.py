@@ -35,10 +35,6 @@ else:
     extra_options = dict(
         # Normally unix-like platforms will use "setup.py install"
         # and install the main script as such
-        scripts=[mainscript],
-    )
+        scripts=[mainscript], )
 
-setup(
-    name="Sensei",
-    **extra_options
-)
+setup(name="Sensei", **extra_options)

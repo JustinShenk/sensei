@@ -12,11 +12,11 @@ from PyInstallerUtils import pyInstallerResourcePath
 
 # import subprocess
 
-from cv2 import (VideoCapture, waitKey, CascadeClassifier,
-                 cvtColor, COLOR_BGR2GRAY)
+from cv2 import (VideoCapture, waitKey, CascadeClassifier, cvtColor,
+                 COLOR_BGR2GRAY)
 
-from PyQt5.QtWidgets import (QPushButton, QApplication, QProgressBar,
-                             QLabel, QInputDialog, qApp, QAction, QMenu,
+from PyQt5.QtWidgets import (QPushButton, QApplication, QProgressBar, QLabel,
+                             QInputDialog, qApp, QAction, QMenu,
                              QSystemTrayIcon, QMainWindow, QDialog)
 from PyQt5.QtCore import (QThread, QTimer, QRect, QPropertyAnimation)
 from PyQt5.QtGui import QIcon
@@ -59,15 +59,13 @@ def getFaces(frame):
         minNeighbors=2,
         minSize=(100, 100),
         #         flags=cv2.cv.CV_HAAR_SCALE_IMAGE
-        flags=0
-    )
+        flags=0)
     if len(faces):
         print("Face found: ", faces[0])
     return faces
 
 
 class Sensei(QMainWindow):
-
     def __init__(self):
         super().__init__()
 
@@ -107,11 +105,10 @@ class Sensei(QMainWindow):
         dialog = QDialog()
         aboutDialog = Ui_AboutWindow()
         aboutDialog.setupUi(dialog)
-        aboutDialog.githubButton.clicked.connect(
-            self.openGitHub)
+        aboutDialog.githubButton.clicked.connect(self.openGitHub)
         dialog.exec_()
-        self.trayIcon.showMessage(
-            "Notice 🙇👊", "Keep strait posture", QSystemTrayIcon.Information, 4000)
+        self.trayIcon.showMessage("Notice 🙇👊", "Keep strait posture",
+                                  QSystemTrayIcon.Information, 4000)
 
     def closeEvent(self, event):
         """ Override QWidget close event to save history on exit. """
@@ -128,8 +125,8 @@ class Sensei(QMainWindow):
             # directory = os.path.join(here, 'data', 'test')
             if not os.path.exists(directory):
                 os.makedirs(directory)
-            with open(os.path.join(directory, str(SESSION_ID) + '.dat'),
-                      'wb') as f:
+            with open(os.path.join(directory,
+                                   str(SESSION_ID) + '.dat'), 'wb') as f:
                 pickle.dump(self.history, f)
         qApp.quit()
 
@@ -156,10 +153,10 @@ class Sensei(QMainWindow):
         self.postureIcon.setContextMenu(menu)
         self.postureIcon.show()
 
-        exitAction = QAction("&Quit Sensei", self, shortcut="Ctrl+Q",
-                             triggered=self.closeEvent)
-        preferencesAction = QAction("&Preferences...",
-                                    self, triggered=self.showApp)
+        exitAction = QAction(
+            "&Quit Sensei", self, shortcut="Ctrl+Q", triggered=self.closeEvent)
+        preferencesAction = QAction(
+            "&Preferences...", self, triggered=self.showApp)
         # preferencesAction.setStatusTip('Sensei Preferences')
         aboutAction = QAction("&About Sensei", self, triggered=self.aboutEvent)
 
@@ -237,7 +234,8 @@ class Sensei(QMainWindow):
     def settings(self):
         global MONITOR_DELAY
         seconds, ok = QInputDialog.getInt(
-            self, "Delay Settings", "Enter number of seconds to check posture\n(Default = 2)")
+            self, "Delay Settings",
+            "Enter number of seconds to check posture\n(Default = 2)")
         if ok:
             seconds = seconds if seconds >= 1 else 0.5
             MONITOR_DELAY = seconds * 1000
@@ -286,11 +284,11 @@ class Sensei(QMainWindow):
             '%Y-%m-%d_%H-%M-%S')] = faces
         x, y, w, h = faces[0]
         if w > self.upright * SENSITIVITY:
-            self.notify(title='Sensei 🙇👊',  # TODO: Add doctor emoji `👨‍⚕️`
-                        subtitle='Whack!',
-                        message='Sit up strait 🙏⛩',
-                        appIcon=APP_ICON_PATH
-                        )
+            self.notify(
+                title='Sensei 🙇👊',  # TODO: Add doctor emoji `👨‍⚕️`
+                subtitle='Whack!',
+                message='Sit up strait 🙏⛩',
+                appIcon=APP_ICON_PATH)
 
     def notify(self, title, subtitle, message, sound=None, appIcon=None):
         """
@@ -312,11 +310,11 @@ class Sensei(QMainWindow):
             m = '-message {!r}'.format(message)
             snd = '-sound {!r}'.format(sound)
             i = '-appIcon {!r}'.format(appIcon)
-            os.system(
-                'terminal-notifier {}'.format(' '.join([m, t, s, snd, i])))
+            os.system('terminal-notifier {}'.format(' '.join([m, t, s, snd,
+                                                              i])))
         else:
-            self.trayIcon.showMessage(
-                "Notice 🙇👊", "Keep strait posture", QSystemTrayIcon.Information, 4000)
+            self.trayIcon.showMessage("Notice 🙇👊", "Keep strait posture",
+                                      QSystemTrayIcon.Information, 4000)
 
     def calibrate(self):
         if self.mode == 2:  # Came from 'Recalibrate'
@@ -339,7 +337,7 @@ class Sensei(QMainWindow):
         # TODO: Focus on user's face rather than artifacts of face detector of others
         # on camera
         # if len(faces) > 1:
-            # print(faces) # Take argmax of faces
+        # print(faces) # Take argmax of faces
         x, y, w, h = faces[0]
         self.upright = w
         self.history[USER_ID][SESSION_ID][datetime.datetime.now().strftime(
@@ -362,7 +360,6 @@ class Sensei(QMainWindow):
 
 
 class Capture(QThread):
-
     def __init__(self, window):
         super(Capture, self).__init__(window)
         self.window = window
@@ -386,8 +383,8 @@ class Capture(QThread):
 def processCLArgs():
     """ Process command line arguments to work with QApplication. """
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--debug", help="Debug mode",
-                        action="store_true")
+    parser.add_argument(
+        "-d", "--debug", help="Debug mode", action="store_true")
     # TODO: Add to `Session ID` to settings menu.
     parser.add_argument("--session", help="Session ID", action="store")
     parser.add_argument("--user", help="User ID", action="store")

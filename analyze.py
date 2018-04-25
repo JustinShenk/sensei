@@ -110,8 +110,8 @@ def plot_subjects(data, meta, exclude_outliers=False, z_threshold=3):
         title = """Head Proximity to Computer over Time
             {}\nSubject ID: {}, Condition: {}, Timepoints: {}
             """.format('Excluding Outliers (z = ' + str(z_threshold) + ') '
-                       if exclude_outliers else '', subject,
-                       conditions, len(time_delta))
+                       if exclude_outliers else '', subject, conditions,
+                       len(time_delta))
 
         plot_it(ax, time_delta, widths, baseline=baseline, title=title)
     plt.show()
@@ -121,8 +121,8 @@ def draw_warnings(ax, x, y, baseline):
     # Get array of warnings/notifications
     warnings = np.where(np.asarray(y) >= int(baseline) * 1.2)
     warning_x, warning_y = np.asarray(x)[warnings], np.asarray(y)[warnings]
-    ax.scatter(warning_x, warning_y, color='r',
-               marker='*', label='Notification')
+    ax.scatter(
+        warning_x, warning_y, color='r', marker='*', label='Notification')
 
 
 def timeTicks(x, pos):
@@ -133,11 +133,16 @@ def timeTicks(x, pos):
 formatter = matplotlib.ticker.FuncFormatter(timeTicks)
 
 
-def plot_it(ax, x, y, subject_id=None, conditions=None, baseline=None, title=None):
+def plot_it(ax,
+            x,
+            y,
+            subject_id=None,
+            conditions=None,
+            baseline=None,
+            title=None):
     if title == None:
         title = 'Head Proximity to Computer over Time\n'
-        'Subject ID: {} Conditions: {}'.format(
-            subject_id, conditions)
+        'Subject ID: {} Conditions: {}'.format(subject_id, conditions)
     ax.set_xlabel('Time (minutes)')
     ax.set_ylabel('Proximity')
     ax.set_title(title)
