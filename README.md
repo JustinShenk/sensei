@@ -4,7 +4,7 @@ End-to-end posture monitor and notification software, for experimentation or sel
 
 ## Run the app (easy)
 
-Clone the repository and open `sensei/dist/Sensei`
+Clone the repository and open `sensei/dist/Sensei.app`
 
 ## Installation via [Homebrew](https://github.com/Homebrew/homebrew) (intermediate)
 
