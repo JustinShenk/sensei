@@ -2,15 +2,23 @@
 
 End-to-end posture monitor and notification software, for experimentation or self-monitoring, with data analysis scripts.
 
-## Installation via [Homebrew](https://github.com/Homebrew/homebrew)
+## Run the app (easy)
+
+Clone the repository and open `sensei/dist/Sensei`
+
+## Installation via [Homebrew](https://github.com/Homebrew/homebrew) (intermediate)
 
 NOTE: Requires Mac with terminal-notifier installed, PyQt5 and OpenCV.
 
-```$ brew install terminal-notifier pyqt5 opencv3 --with-contrib --with-python3 --HEAD```
+```bash
+brew install terminal-notifier pyqt5 opencv3 --with-contrib --with-python3 --HEAD
+```
 
 Clone the repository and run it
 
-```$ python sensei.py```
+```bash
+$ python sensei.py
+```
 
 ## Demo
 
@@ -18,7 +26,7 @@ Clone the repository and run it
 
 ## Usage
 
-Sit in comfortable, upright position
+Sit in a comfortable, upright position
 Click 'Calibrate'
 
 You will receive notifications if you are too close.
