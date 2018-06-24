@@ -1,6 +1,6 @@
 # Sensei - *(SEN-say)*🙇👊
 
-End-to-end posture monitor and notification software, for experimentation or self-monitoring, with data analysis scripts.
+Posture monitor and notification OSX app, for experimentation or self-monitoring, with data analysis scripts.
 
 ## Run the app (easy)
 
