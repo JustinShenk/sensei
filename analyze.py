@@ -109,9 +109,9 @@ def plot_subjects(data, meta, exclude_outliers=False, z_threshold=3):
             time_delta, widths = remove_outliers(time_delta, widths)
         title = """Head Proximity to Computer over Time
             {}\nSubject ID: {}, Condition: {}, Timepoints: {}
-            """.format('Excluding Outliers (z = ' + str(z_threshold) + ') '
-                       if exclude_outliers else '', subject, conditions,
-                       len(time_delta))
+            """.format(
+            'Excluding Outliers (z = ' + str(z_threshold) + ') '
+            if exclude_outliers else '', subject, conditions, len(time_delta))
 
         plot_it(ax, time_delta, widths, baseline=baseline, title=title)
     plt.show()
